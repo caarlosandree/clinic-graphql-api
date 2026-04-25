@@ -30,5 +30,12 @@ spring:
     websocket:
       path: /graphql
 
+logging:
+  level:
+    root: INFO
+    com.example.catalogo: INFO
+    org.springframework.graphql: WARN
+    graphql.execution: WARN
+
 server:
   port: 8080
