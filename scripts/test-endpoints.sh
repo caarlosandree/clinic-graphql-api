@@ -44,16 +44,28 @@ graphql_request() {
     local description="$2"
     local extract_path="${3:-}"
 
+    local payload
+    if command -v jq >/dev/null 2>&1; then
+        payload=$(jq -n --arg q "$query" '{query: $q}')
+    else
+        # Fallback sem jq: escape minimal de aspas duplas
+        local escaped_query
+        escaped_query=${query//\\/\\\\}
+        escaped_query=${escaped_query//\"/\\\"}
+        payload="{\"query\": \"$escaped_query\"}"
+    fi
+
     local response
     local http_code
     local curl_opts=(-s -w "\n%{http_code}" -m "$TIMEOUT" \
         -H "Content-Type: application/json" \
-        --data-raw "{\"query\": $query}")
+        --data-raw "$payload")
 
     if [[ "$VERBOSE" == "1" ]]; then
         curl_opts+=(-v)
         echo -e "\n${YELLOW}--- Request: $description ---${NC}"
         echo "Query: $query"
+        echo "Payload: $payload"
     fi
 
     response=$(curl "${curl_opts[@]}" "$GRAPHQL_URL")
@@ -123,7 +135,7 @@ wait_for_app() {
 
 test_query_clinics() {
     log_info "Testando Query: clinics"
-    graphql_request '"{ clinics { id name cnpj phone address createdAt updatedAt } }"' \
+    graphql_request '{ clinics { id name cnpj phone address createdAt updatedAt } }' \
         "Query clinics"
 }
 
@@ -133,7 +145,7 @@ test_query_clinic_by_id() {
         log_warn "Nenhum clinicId disponível, pulando clinicById"
         return 0
     fi
-    graphql_request "\"{ clinicById(id: \\\"$CLINIC_ID\\\") { id name cnpj phone address createdAt updatedAt } }\"" \
+    graphql_request "{ clinicById(id: \"$CLINIC_ID\") { id name cnpj phone address createdAt updatedAt } }" \
         "Query clinicById (id=$CLINIC_ID)"
 }
 
@@ -143,7 +155,7 @@ test_query_procedures_by_clinic() {
         log_warn "Nenhum clinicId disponível, pulando proceduresByClinic"
         return 0
     fi
-    graphql_request "\"{ proceduresByClinic(clinicId: \\\"$CLINIC_ID\\\") { id name description durationMinutes price createdAt updatedAt } }\"" \
+    graphql_request "{ proceduresByClinic(clinicId: \"$CLINIC_ID\") { id name description durationMinutes price createdAt updatedAt } }" \
         "Query proceduresByClinic (clinicId=$CLINIC_ID)"
 }
 
@@ -153,7 +165,7 @@ test_query_professionals_by_clinic() {
         log_warn "Nenhum clinicId disponível, pulando professionalsByClinic"
         return 0
     fi
-    graphql_request "\"{ professionalsByClinic(clinicId: \\\"$CLINIC_ID\\\") { id name specialty createdAt updatedAt } }\"" \
+    graphql_request "{ professionalsByClinic(clinicId: \"$CLINIC_ID\") { id name specialty createdAt updatedAt } }" \
         "Query professionalsByClinic (clinicId=$CLINIC_ID)"
 }
 
@@ -163,13 +175,13 @@ test_query_appointments_by_clinic() {
         log_warn "Nenhum clinicId disponível, pulando appointmentsByClinic"
         return 0
     fi
-    graphql_request "\"{ appointmentsByClinic(clinicId: \\\"$CLINIC_ID\\\") { id patientName patientPhone scheduledAt status createdAt updatedAt } }\"" \
+    graphql_request "{ appointmentsByClinic(clinicId: \"$CLINIC_ID\") { id patientName patientPhone scheduledAt status createdAt updatedAt } }" \
         "Query appointmentsByClinic (clinicId=$CLINIC_ID)"
 }
 
 test_query_appointments_by_status() {
     log_info "Testando Query: appointmentsByStatus"
-    graphql_request '"{ appointmentsByStatus(status: SCHEDULED) { id patientName patientPhone scheduledAt status createdAt updatedAt } }"' \
+    graphql_request '{ appointmentsByStatus(status: SCHEDULED) { id patientName patientPhone scheduledAt status createdAt updatedAt } }' \
         "Query appointmentsByStatus (status=SCHEDULED)"
 }
 
@@ -177,9 +189,14 @@ test_query_appointments_by_status() {
 
 test_mutation_create_clinic() {
     log_info "Testando Mutation: createClinic"
+    # Gera CNPJ único baseado em timestamp para evitar conflitos
+    local timestamp
+    timestamp=$(date +%s%N | cut -c1-14)
+    local unique_cnpj="12${timestamp}00195"
+
     local response
     response=$(graphql_request \
-        '"mutation { createClinic(input: { name: \\\"Clinica Teste Bash\\\", cnpj: \\\"12345678000195\\\", phone: \\\"11999999999\\\", address: \\\"Rua Teste, 123\\\" }) { id name cnpj phone address createdAt updatedAt } }"' \
+        "mutation { createClinic(input: { name: \"Clinica Teste Bash\", cnpj: \"$unique_cnpj\", phone: \"11999999999\", address: \"Rua Teste, 123\" }) { id name cnpj phone address createdAt updatedAt } }" \
         "Mutation createClinic" \
         ".data.createClinic.id" || true)
 
@@ -199,7 +216,7 @@ test_mutation_create_procedure() {
     fi
     local response
     response=$(graphql_request \
-        "\"mutation { createProcedure(input: { clinicId: \\\"$CLINIC_ID\\\", name: \\\"Procedimento Teste\\\", description: \\\"Descricao do procedimento\\\", durationMinutes: 60, price: 150.00 }) { id name description durationMinutes price createdAt updatedAt } }\"" \
+        "mutation { createProcedure(input: { clinicId: \"$CLINIC_ID\", name: \"Procedimento Teste\", description: \"Descricao do procedimento\", durationMinutes: 60, price: 150.00 }) { id name description durationMinutes price createdAt updatedAt } }" \
         "Mutation createProcedure" \
         ".data.createProcedure.id" || true)
 
@@ -219,7 +236,7 @@ test_mutation_create_professional() {
     fi
     local response
     response=$(graphql_request \
-        "\"mutation { createProfessional(input: { clinicId: \\\"$CLINIC_ID\\\", name: \\\"Dr. Teste\\\", specialty: \\\"Cardiologia\\\" }) { id name specialty createdAt updatedAt } }\"" \
+        "mutation { createProfessional(input: { clinicId: \"$CLINIC_ID\", name: \"Dr. Teste\", specialty: \"Cardiologia\" }) { id name specialty createdAt updatedAt } }" \
         "Mutation createProfessional" \
         ".data.createProfessional.id" || true)
 
@@ -243,7 +260,7 @@ test_mutation_create_appointment() {
 
     local response
     response=$(graphql_request \
-        "\"mutation { createAppointment(input: { clinicId: \\\"$CLINIC_ID\\\", procedureId: \\\"$PROCEDURE_ID\\\", professionalId: \\\"$PROFESSIONAL_ID\\\", patientName: \\\"Paciente Teste\\\", patientPhone: \\\"11988887777\\\", scheduledAt: \\\"$scheduled_at\\\" }) { id patientName patientPhone scheduledAt status createdAt updatedAt } }\"" \
+        "mutation { createAppointment(input: { clinicId: \"$CLINIC_ID\", procedureId: \"$PROCEDURE_ID\", professionalId: \"$PROFESSIONAL_ID\", patientName: \"Paciente Teste\", patientPhone: \"11988887777\", scheduledAt: \"$scheduled_at\" }) { id patientName patientPhone scheduledAt status createdAt updatedAt } }" \
         "Mutation createAppointment" \
         ".data.createAppointment.id" || true)
 
@@ -262,7 +279,7 @@ test_mutation_cancel_appointment() {
         return 0
     fi
     graphql_request \
-        "\"mutation { cancelAppointment(id: \\\"$APPOINTMENT_ID\\\") { id status } }\"" \
+        "mutation { cancelAppointment(id: \"$APPOINTMENT_ID\") { id status } }" \
         "Mutation cancelAppointment (id=$APPOINTMENT_ID)"
 }
 
@@ -279,7 +296,7 @@ test_mutation_finish_appointment() {
 
     local new_appointment_id
     new_appointment_id=$(graphql_request \
-        "\"mutation { createAppointment(input: { clinicId: \\\"$CLINIC_ID\\\", procedureId: \\\"$PROCEDURE_ID\\\", professionalId: \\\"$PROFESSIONAL_ID\\\", patientName: \\\"Paciente Finalizar\\\", patientPhone: \\\"11977776666\\\", scheduledAt: \\\"$scheduled_at\\\" }) { id } }\"" \
+        "mutation { createAppointment(input: { clinicId: \"$CLINIC_ID\", procedureId: \"$PROCEDURE_ID\", professionalId: \"$PROFESSIONAL_ID\", patientName: \"Paciente Finalizar\", patientPhone: \"11977776666\", scheduledAt: \"$scheduled_at\" }) { id } }" \
         "Mutation createAppointment (para finish)" \
         ".data.createAppointment.id" || true)
 
@@ -291,7 +308,7 @@ test_mutation_finish_appointment() {
     log_info "Appointment extra criado com ID: $new_appointment_id"
 
     graphql_request \
-        "\"mutation { finishAppointment(id: \\\"$new_appointment_id\\\") { id status } }\"" \
+        "mutation { finishAppointment(id: \"$new_appointment_id\") { id status } }" \
         "Mutation finishAppointment (id=$new_appointment_id)"
 }
 
@@ -360,7 +377,8 @@ main() {
     fi
 
     if ! command -v jq >/dev/null 2>&1; then
-        echo "AVISO: jq não está instalado. Instale para melhor formatação." >&2
+        echo "ERRO: jq é obrigatório para este script. Instale com: brew install jq (macOS) ou apt install jq (Linux)" >&2
+        exit 1
     fi
 
     # Healthcheck
