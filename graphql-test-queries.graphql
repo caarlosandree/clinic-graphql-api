@@ -1,0 +1,361 @@
+# ============================================
+# GraphQL Test Queries para Validação de Dados
+# ============================================
+# Use estas queries para validar os dados de teste inseridos pela migration V5__seed_test_data.sql
+# Todas as queries usam os UUIDs fixos definidos na migration
+
+# ============================================
+# 1. Listar todas as clínicas
+# ============================================
+query GetAllClinics {
+  clinics {
+    id
+    name
+    cnpj
+    phone
+    address
+    createdAt
+    updatedAt
+  }
+}
+
+# ============================================
+# 2. Listar clínicas com seus procedimentos
+# ============================================
+query GetClinicsWithProcedures {
+  clinics {
+    id
+    name
+    procedures {
+      id
+      name
+      description
+      durationMinutes
+      price
+    }
+  }
+}
+
+# ============================================
+# 3. Listar profissionais por clínica (Clínica Bella Donna)
+# ============================================
+query GetProfessionalsByClinic {
+  clinic(id: "550e8400-e29b-41d4-a716-446655440001") {
+    id
+    name
+    professionals {
+      id
+      name
+      specialty
+    }
+  }
+}
+
+# ============================================
+# 4. Listar todos os profissionais com suas clínicas
+# ============================================
+query GetAllProfessionalsWithClinics {
+  professionals {
+    id
+    name
+    specialty
+    clinic {
+      id
+      name
+    }
+  }
+}
+
+# ============================================
+# 5. Listar agendamentos por clínica (Clínica Bella Donna)
+# ============================================
+query GetAppointmentsByClinic {
+  clinic(id: "550e8400-e29b-41d4-a716-446655440001") {
+    id
+    name
+    appointments {
+      id
+      patientName
+      patientPhone
+      scheduledAt
+      status
+      procedure {
+        id
+        name
+      }
+      professional {
+        id
+        name
+        specialty
+      }
+    }
+  }
+}
+
+# ============================================
+# 6. Listar agendamentos por status (SCHEDULED)
+# ============================================
+query GetAppointmentsByStatus {
+  appointmentsByStatus(status: SCHEDULED) {
+    id
+    patientName
+    patientPhone
+    scheduledAt
+    status
+    clinic {
+      id
+      name
+    }
+    procedure {
+      id
+      name
+    }
+    professional {
+      id
+      name
+    }
+  }
+}
+
+# ============================================
+# 7. Listar agendamentos por status (CANCELLED)
+# ============================================
+query GetCancelledAppointments {
+  appointmentsByStatus(status: CANCELLED) {
+    id
+    patientName
+    patientPhone
+    scheduledAt
+    status
+    clinic {
+      id
+      name
+    }
+    procedure {
+      id
+      name
+    }
+    professional {
+      id
+      name
+    }
+  }
+}
+
+# ============================================
+# 8. Listar agendamentos por status (FINISHED)
+# ============================================
+query GetFinishedAppointments {
+  appointmentsByStatus(status: FINISHED) {
+    id
+    patientName
+    patientPhone
+    scheduledAt
+    status
+    clinic {
+      id
+      name
+    }
+    procedure {
+      id
+      name
+    }
+    professional {
+      id
+      name
+    }
+  }
+}
+
+# ============================================
+# 9. Buscar uma clínica específica por ID
+# ============================================
+query GetClinicById {
+  clinic(id: "550e8400-e29b-41d4-a716-446655440001") {
+    id
+    name
+    cnpj
+    phone
+    address
+    procedures {
+      id
+      name
+      price
+    }
+    professionals {
+      id
+      name
+      specialty
+    }
+    appointments {
+      id
+      patientName
+      scheduledAt
+      status
+    }
+  }
+}
+
+# ============================================
+# 10. Listar todos os procedimentos com clínicas
+# ============================================
+query GetAllProceduresWithClinics {
+  procedures {
+    id
+    name
+    description
+    durationMinutes
+    price
+    clinic {
+      id
+      name
+      phone
+    }
+  }
+}
+
+# ============================================
+# 11. Listar todos os agendamentos com detalhes completos
+# ============================================
+query GetAllAppointmentsWithDetails {
+  appointments {
+    id
+    patientName
+    patientPhone
+    scheduledAt
+    status
+    clinic {
+      id
+      name
+      address
+    }
+    procedure {
+      id
+      name
+      durationMinutes
+      price
+    }
+    professional {
+      id
+      name
+      specialty
+    }
+  }
+}
+
+# ============================================
+# 12. Buscar um agendamento específico por ID
+# ============================================
+query GetAppointmentById {
+  appointment(id: "880e8400-e29b-41d4-a716-446655440101") {
+    id
+    patientName
+    patientPhone
+    scheduledAt
+    status
+    clinic {
+      id
+      name
+    }
+    procedure {
+      id
+      name
+      price
+    }
+    professional {
+      id
+      name
+      specialty
+    }
+  }
+}
+
+# ============================================
+# 13. Listar procedimentos de uma clínica específica
+# ============================================
+query GetProceduresByClinic {
+  clinic(id: "550e8400-e29b-41d4-a716-446655440002") {
+    id
+    name
+    procedures {
+      id
+      name
+      description
+      durationMinutes
+      price
+    }
+  }
+}
+
+# ============================================
+# 14. Listar agendamentos futuros (a partir de hoje)
+# ============================================
+query GetFutureAppointments {
+  appointments {
+    id
+    patientName
+    scheduledAt
+    status
+    clinic {
+      id
+      name
+    }
+  }
+}
+# Nota: Filtre por scheduledAt >= NOW() no servidor se necessário
+
+# ============================================
+# 15. Validar integridade: agendamentos com procedimento e profissional da mesma clínica
+# ============================================
+query ValidateAppointmentIntegrity {
+  appointments {
+    id
+    patientName
+    clinic {
+      id
+      name
+    }
+    procedure {
+      id
+      name
+      clinic {
+        id
+        name
+      }
+    }
+    professional {
+      id
+      name
+      clinic {
+        id
+        name
+      }
+    }
+  }
+}
+# Verifique se clinic.id == procedure.clinic.id == professional.clinic.id
+
+# ============================================
+# UUIDs de Referência (para facilitar testes)
+# ============================================
+# CLÍNICAS
+# Clínica Estética Bella Donna: 550e8400-e29b-41d4-a716-446655440001
+# Centro de Beleza Renovar: 550e8400-e29b-41d4-a716-446655440002
+# Estética Vida Nova: 550e8400-e29b-41d4-a716-446655440003
+# Clínica Harmonia: 550e8400-e29b-41d4-a716-446655440004
+# Spa & Estética Serenity: 550e8400-e29b-41d4-a716-446655440005
+
+# PROCEDIMENTOS (Bella Donna)
+# Limpeza de Pele: 660e8400-e29b-41d4-a716-446655440101
+# Botox Facial: 660e8400-e29b-41d4-a716-446655440102
+# Preenchimento Facial: 660e8400-e29b-41d4-a716-446655440103
+
+# PROFISSIONAIS (Bella Donna)
+# Dra. Ana Silva: 770e8400-e29b-41d4-a716-446655440101
+# Dra. Carla Oliveira: 770e8400-e29b-41d4-a716-446655440102
+# Dr. Pedro Santos: 770e8400-e29b-41d4-a716-446655440103
+
+# AGENDAMENTOS (Bella Donna)
+# Maria Oliveira: 880e8400-e29b-41d4-a716-446655440101
+# João Silva: 880e8400-e29b-41d4-a716-446655440102
+# Ana Costa: 880e8400-e29b-41d4-a716-446655440103
