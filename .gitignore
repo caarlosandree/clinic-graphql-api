@@ -62,3 +62,6 @@ Thumbs.db
 ### Application Specific ###
 application-local.yml
 application-local.properties
+
+### Windsurf ###
+.windsurf/
