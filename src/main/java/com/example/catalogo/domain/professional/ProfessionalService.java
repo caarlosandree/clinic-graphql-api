@@ -53,7 +53,7 @@ public class ProfessionalService {
             .clinic(clinic)
             .build();
 
-        Professional saved = professionalRepository.save(professional);
+        Professional saved = professionalRepository.saveAndFlush(professional);
         log.info("Profissional criado | professionalId={} | clinicId={} | name={} | specialty={}",
             saved.getId(), clinic.getId(), saved.getName(), saved.getSpecialty());
         return ProfessionalDTO.fromEntity(saved);

@@ -89,7 +89,7 @@ public class AppointmentService {
             .professional(professional)
             .build();
 
-        Appointment saved = appointmentRepository.save(appointment);
+        Appointment saved = appointmentRepository.saveAndFlush(appointment);
         log.info("Agendamento criado | appointmentId={} | clinicId={} | scheduledAt={} | status={}",
             saved.getId(), clinic.getId(), saved.getScheduledAt(), saved.getStatus());
         return AppointmentDTO.fromEntity(saved);

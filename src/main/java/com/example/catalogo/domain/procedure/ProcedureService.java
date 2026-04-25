@@ -68,7 +68,7 @@ public class ProcedureService {
             .clinic(clinic)
             .build();
 
-        Procedure saved = procedureRepository.save(procedure);
+        Procedure saved = procedureRepository.saveAndFlush(procedure);
         log.info("Procedimento criado | procedureId={} | clinicId={} | name={}",
             saved.getId(), clinic.getId(), saved.getName());
         return ProcedureDTO.fromEntity(saved);

@@ -55,7 +55,7 @@ public class ClinicService {
             .address(input.address())
             .build();
 
-        Clinic saved = clinicRepository.save(clinic);
+        Clinic saved = clinicRepository.saveAndFlush(clinic);
         log.info("Clínica criada | clinicId={} | name={}", saved.getId(), saved.getName());
         return ClinicDTO.fromEntity(saved);
     }
