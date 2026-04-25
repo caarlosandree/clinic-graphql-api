@@ -1,0 +1,13 @@
+package com.example.catalogo.domain.clinic;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+import java.util.UUID;
+
+@Repository
+public interface ClinicRepository extends JpaRepository<Clinic, UUID> {
+    Optional<Clinic> findByCnpj(String cnpj);
+    boolean existsByCnpj(String cnpj);
+}

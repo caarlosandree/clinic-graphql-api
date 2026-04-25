@@ -1,0 +1,96 @@
+type Clinic {
+    id: ID!
+    name: String!
+    cnpj: String!
+    phone: String
+    address: String
+    createdAt: String!
+    updatedAt: String!
+}
+
+type Procedure {
+    id: ID!
+    name: String!
+    description: String
+    durationMinutes: Int!
+    price: Float!
+    clinic: Clinic!
+    createdAt: String!
+    updatedAt: String!
+}
+
+type Professional {
+    id: ID!
+    name: String!
+    specialty: String!
+    clinic: Clinic!
+    createdAt: String!
+    updatedAt: String!
+}
+
+type Appointment {
+    id: ID!
+    patientName: String!
+    patientPhone: String
+    scheduledAt: String!
+    status: AppointmentStatus!
+    clinic: Clinic!
+    procedure: Procedure!
+    professional: Professional!
+    createdAt: String!
+    updatedAt: String!
+}
+
+enum AppointmentStatus {
+    SCHEDULED
+    CANCELLED
+    FINISHED
+}
+
+type Query {
+    clinics: [Clinic!]!
+    clinicById(id: ID!): Clinic!
+    proceduresByClinic(clinicId: ID!): [Procedure!]!
+    professionalsByClinic(clinicId: ID!): [Professional!]!
+    appointmentsByClinic(clinicId: ID!): [Appointment!]!
+    appointmentsByStatus(status: AppointmentStatus!): [Appointment!]!
+}
+
+input CreateClinicInput {
+    name: String!
+    cnpj: String!
+    phone: String
+    address: String
+}
+
+input CreateProcedureInput {
+    clinicId: ID!
+    name: String!
+    description: String
+    durationMinutes: Int!
+    price: Float!
+}
+
+input CreateProfessionalInput {
+    clinicId: ID!
+    name: String!
+    specialty: String!
+}
+
+input CreateAppointmentInput {
+    clinicId: ID!
+    procedureId: ID!
+    professionalId: ID!
+    patientName: String!
+    patientPhone: String
+    scheduledAt: String!
+}
+
+type Mutation {
+    createClinic(input: CreateClinicInput!): Clinic!
+    createProcedure(input: CreateProcedureInput!): Procedure!
+    createProfessional(input: CreateProfessionalInput!): Professional!
+    createAppointment(input: CreateAppointmentInput!): Appointment!
+    cancelAppointment(id: ID!): Appointment!
+    finishAppointment(id: ID!): Appointment!
+}
